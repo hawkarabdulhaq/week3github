@@ -1,7 +1,4 @@
 streamlit
 numpy
 matplotlib
-gspread
-oauth2client
-pandas
-gspread-dataframe
+sqlite3
