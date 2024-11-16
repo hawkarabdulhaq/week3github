@@ -42,6 +42,9 @@ max_iter = st.sidebar.slider(
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
+if "selection" not in st.session_state:
+    st.session_state.selection = None
+
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
     x = np.linspace(viewport[0], viewport[1], width)
@@ -80,19 +83,30 @@ fig.update_layout(
     height=800
 )
 
-# Display Plotly Plot
+# Display Plotly Chart
 plot = st.plotly_chart(fig, use_container_width=True)
 
-# Capture Selection Data
-selection = st.session_state.get("selection_data", None)
-if "selection_data" not in st.session_state:
-    st.session_state.selection_data = None
-
-# Sidebar for Selected Region and Zoom In
+# Sidebar Section for Selected Region and Zoom Controls
 st.sidebar.header("Zoom Controls")
 if plot and plot.json_events:
     for event in plot.json_events:
         if event["type"] == "plotly_selected":
             selected_region = event["range"]
-            st.sidebar.write("Selected Region")
-            st.sidebar.write(selected_region)
+            st.sidebar.write(f"X Range: {selected_region['x']}")
+            st.sidebar.write(f"Y Range: {selected_region['y']}")
+            st.session_state.selection = selected_region
+
+# Apply Zoom When Button Clicked
+if st.sidebar.button("Zoom In") and st.session_state.selection:
+    selected = st.session_state.selection
+    st.session_state.viewport = [
+        selected["x"][0], selected["x"][1],
+        selected["y"][0], selected["y"][1],
+    ]
+    st.experimental_rerun()
+
+# Reset Viewport
+if st.sidebar.button("Reset View"):
+    st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
+    st.session_state.selection = None
+    st.experimental_rerun()
