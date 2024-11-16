@@ -1,54 +1,27 @@
 import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
-import json
+import pandas as pd
 
-# Load data from secrets
-parameters = json.loads(st.secrets["parameters"]["data"])
+# Fetch data from Google Sheets
+def get_parameters():
+    sheet_url = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing"
+    sheet_name = "Sheet1"  # Replace with your actual sheet name
+    data = fetch_sheet_data(sheet_url, sheet_name)
+    return data
 
-# Streamlit Title
-st.title("Mandelbrot Set Visualization")
+# Fetch the parameter data
+parameters_df = get_parameters()
 
-# Sidebar Parameters
-st.sidebar.header("Settings")
-width = st.sidebar.slider("Width", 400, 1600, 800)
-height = st.sidebar.slider("Height", 400, 1600, 800)
-max_iter = st.sidebar.slider("Max Iterations", 10, 500, 100)
+# Streamlit interface
+st.title("Dynamic App with Google Sheet Parameters")
 
-# Select preset values
-st.sidebar.subheader("Preset Parameters")
-selected_preset = st.sidebar.selectbox("Choose a preset", range(len(parameters)))
+# Dynamically create sliders and inputs
+for index, row in parameters_df.iterrows():
+    param_name = row["Parameter"]
+    min_val = row["Min"]
+    max_val = row["Max"]
+    default_val = row["Default"]
 
-# Apply preset values if selected
-preset = parameters[selected_preset]
-st.write(f"Using Preset: {preset}")
+    st.sidebar.slider(param_name, min_val, max_val, default_val)
 
-# Generate Mandelbrot Set
-x = np.linspace(-2, 1, width)
-y = np.linspace(-1.5, 1.5, height)
-X, Y = np.meshgrid(x, y)
-C = X + 1j * Y
-
-Z = np.zeros_like(C, dtype=complex)
-mandelbrot_set = np.zeros(C.shape, dtype=int)
-
-for i in range(max_iter):
-    mask = np.abs(Z) < 2
-    Z[mask] = Z[mask] * Z[mask] + C[mask]
-    mandelbrot_set += mask
-
-# Plotting
-fig, ax = plt.subplots(figsize=(8, 8))
-im = ax.imshow(
-    mandelbrot_set,
-    extent=(-2, 1, -1.5, 1.5),
-    cmap="coolwarm",
-    interpolation="bilinear",
-)
-plt.colorbar(im, ax=ax, label="Iterations")
-ax.set_title("Mandelbrot Set")
-ax.set_xlabel("Real Part")
-ax.set_ylabel("Imaginary Part")
-
-# Streamlit Display
-st.pyplot(fig)
+# Add functionality based on parameters (custom logic)
+st.write("Use the sliders to interact with the preset values!")
