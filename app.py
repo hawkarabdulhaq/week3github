@@ -110,10 +110,10 @@ y_max = st.sidebar.number_input("Y Max", value=y_max)
 if st.sidebar.button("Zoom In"):
     if x_min < x_max and y_min < y_max:
         st.session_state.viewport = [x_min, x_max, y_min, y_max]
-        st.experimental_rerun()
+        st.rerun()  # Updated function
 
 # Reset Viewport
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
     st.session_state.selected_region = None
-    st.experimental_rerun()
+    st.rerun()  # Updated function
