@@ -1,86 +1,36 @@
+import sqlite3
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import requests
 
-# Google Sheet public CSV and Sheets API link
-GOOGLE_SHEET_URL_CSV = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/export?format=csv&id=1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w&gid=0"
-GOOGLE_SHEET_URL_UPDATE = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/values/Sheet1!A1:append?valueInputOption=USER_ENTERED"
-
-# Function to fetch parameters from Google Sheet
-def fetch_parameters():
-    try:
-        data = pd.read_csv(GOOGLE_SHEET_URL_CSV)
-        params = {
-            "width": int(data.loc[data['Parameter'] == 'Width', 'Value'].values[0]),
-            "height": int(data.loc[data['Parameter'] == 'Height', 'Value'].values[0]),
-            "max_iter": int(data.loc[data['Parameter'] == 'Max Iterations', 'Value'].values[0])
-        }
-        return params
-    except Exception as e:
-        st.error(f"Error fetching data from Google Sheet: {e}")
-        return {"width": 800, "height": 800, "max_iter": 100}  # Defaults
-
-# Function to update parameters in the Google Sheet
-def update_parameters(width, height, max_iter):
-    try:
-        # Prepare data for the update
-        update_data = {
-            "range": "Sheet1!A1:C3",
-            "majorDimension": "ROWS",
-            "values": [
-                ["Parameter", "Value"],
-                ["Width", width],
-                ["Height", height],
-                ["Max Iterations", max_iter]
-            ]
-        }
-        response = requests.put(
-            GOOGLE_SHEET_URL_UPDATE,
-            json=update_data,
-        )
-        if response.status_code == 200:
-            st.success("Parameters updated successfully!")
-        else:
-            st.error(f"Failed to update sheet: {response.text}")
-    except Exception as e:
-        st.error(f"Error updating Google Sheet: {e}")
-
-# Sidebar UI for fetching and editing parameters
-st.sidebar.header("Control Panel")
-if st.sidebar.button("Fetch Parameters"):
-    st.session_state.params = fetch_parameters()
-
-# Initialize session state for parameters
-if "params" not in st.session_state:
-    st.session_state.params = fetch_parameters()
-
-# Display and edit parameters in the sidebar
-st.sidebar.subheader("Edit Parameters")
-params = st.session_state.params
-width = st.sidebar.number_input("Width", min_value=100, max_value=2000, value=params["width"])
-height = st.sidebar.number_input("Height", min_value=100, max_value=2000, value=params["height"])
-max_iter = st.sidebar.number_input("Max Iterations", min_value=10, max_value=1000, value=params["max_iter"])
-
-# Update button
-if st.sidebar.button("Update Parameters"):
-    update_parameters(width, height, max_iter)
-    st.session_state.params = {"width": width, "height": height, "max_iter": max_iter}
-
-# Get parameters for the current run
-width = st.session_state.params["width"]
-height = st.session_state.params["height"]
-max_iter = st.session_state.params["max_iter"]
-
-# Display current parameters in the sidebar
-st.sidebar.subheader("Current Parameters")
-st.sidebar.write(f"Width: {width}")
-st.sidebar.write(f"Height: {height}")
-st.sidebar.write(f"Max Iterations: {max_iter}")
+# Function to fetch parameters from the database
+def get_parameters():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    
+    # Fetch the latest parameters (you could add logic to fetch specific ones)
+    cursor.execute("SELECT width, height, max_iter FROM parameters ORDER BY id DESC LIMIT 1")
+    parameters = cursor.fetchone()  # Fetch the first row (latest parameters)
+    
+    conn.close()
+    
+    # Return the parameters if found, otherwise default values
+    if parameters:
+        return parameters
+    else:
+        return (800, 800, 100)  # Default values
 
 # Streamlit Title
 st.title("Mandelbrot Set Visualization")
+
+# Fetch parameters from the database
+width, height, max_iter = get_parameters()
+
+# Sidebar for adjusting parameters
+st.sidebar.header("Settings")
+width = st.sidebar.slider("Width", 400, 1600, width)
+height = st.sidebar.slider("Height", 400, 1600, height)
+max_iter = st.sidebar.slider("Max Iterations", 10, 500, max_iter)
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
