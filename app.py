@@ -7,7 +7,6 @@ import pandas as pd
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/export?format=csv&id=1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w&gid=0"
 
 # Function to fetch parameters from Google Sheet
-@st.cache_data
 def fetch_parameters():
     try:
         data = pd.read_csv(GOOGLE_SHEET_URL)
