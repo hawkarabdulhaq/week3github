@@ -23,6 +23,19 @@ st.markdown("""
     .css-1avcm0n {
         color: #0A3D62 !important;
     }
+    footer {
+        visibility: visible;
+    }
+    footer:after {
+        content: 'Made by habdulhaq.com';
+        display: block;
+        position: relative;
+        color: #555;
+        padding: 10px;
+        font-size: 12px;
+        text-align: center;
+        background: #f4f4f8;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -150,6 +163,6 @@ ax.set_xlabel("Real Part")
 ax.set_ylabel("Imaginary Part")
 st.pyplot(fig)
 
-# Footer
+# Footer Branding
 st.sidebar.markdown("---")
-st.sidebar.markdown("Built with ❤️ by Hawkar")
+st.sidebar.markdown("Built with ❤️ by [habdulhaq.com](https://habdulhaq.com)")
