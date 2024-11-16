@@ -1,6 +1,5 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
 import plotly.express as px
 
 # Page Configuration
@@ -20,21 +19,15 @@ Drag to select a region on the plot, and then click "Zoom In" to zoom into the f
 # Sidebar Parameters
 st.sidebar.title("Control Panel")
 width = st.sidebar.slider(
-    "Canvas Width (Pixels)",
-    400, 2000,
-    800,
+    "Canvas Width (Pixels)", 400, 2000, 800,
     help="Adjust the width of the visualization canvas."
 )
 height = st.sidebar.slider(
-    "Canvas Height (Pixels)",
-    400, 2000,
-    800,
+    "Canvas Height (Pixels)", 400, 2000, 800,
     help="Adjust the height of the visualization canvas."
 )
 max_iter = st.sidebar.slider(
-    "Max Iterations",
-    10, 1000,
-    500,
+    "Max Iterations", 10, 1000, 500,
     help="Set the maximum number of iterations for rendering."
 )
 
@@ -42,8 +35,8 @@ max_iter = st.sidebar.slider(
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
-if "selection" not in st.session_state:
-    st.session_state.selection = None
+if "selected_region" not in st.session_state:
+    st.session_state.selected_region = None
 
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
@@ -86,27 +79,22 @@ fig.update_layout(
 # Display Plotly Chart
 plot = st.plotly_chart(fig, use_container_width=True)
 
-# Sidebar Section for Selected Region and Zoom Controls
+# Manual Region Selection
 st.sidebar.header("Zoom Controls")
-if plot and plot.json_events:
-    for event in plot.json_events:
-        if event["type"] == "plotly_selected":
-            selected_region = event["range"]
-            st.sidebar.write(f"X Range: {selected_region['x']}")
-            st.sidebar.write(f"Y Range: {selected_region['y']}")
-            st.session_state.selection = selected_region
+x_min = st.sidebar.number_input("X Min", value=viewport[0])
+x_max = st.sidebar.number_input("X Max", value=viewport[1])
+y_min = st.sidebar.number_input("Y Min", value=viewport[2])
+y_max = st.sidebar.number_input("Y Max", value=viewport[3])
 
 # Apply Zoom When Button Clicked
-if st.sidebar.button("Zoom In") and st.session_state.selection:
-    selected = st.session_state.selection
-    st.session_state.viewport = [
-        selected["x"][0], selected["x"][1],
-        selected["y"][0], selected["y"][1],
-    ]
-    st.experimental_rerun()
+if st.sidebar.button("Zoom In"):
+    if x_min < x_max and y_min < y_max:
+        st.session_state.viewport = [x_min, x_max, y_min, y_max]
+        st.experimental_rerun()
+    else:
+        st.sidebar.error("Invalid region! Ensure X Min < X Max and Y Min < Y Max.")
 
 # Reset Viewport
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
-    st.session_state.selection = None
     st.experimental_rerun()
