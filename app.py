@@ -2,14 +2,16 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import requests
 
-# Google Sheet URL and tab
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/export?format=csv&id=1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w&gid=0"
+# Google Sheet API for export and update
+GOOGLE_SHEET_URL_CSV = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/export?format=csv&id=1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w&gid=0"
+GOOGLE_SHEET_URL_UPDATE = "https://docs.google.com/forms/d/e/1FAIpQLSdTJDCLxRY_79B5lPXXzW4KH8YrRrlTYBiQAz3QHaxIx_gNOA/formResponse"
 
 # Function to fetch parameters from Google Sheet
 def fetch_parameters():
     try:
-        data = pd.read_csv(GOOGLE_SHEET_URL)
+        data = pd.read_csv(GOOGLE_SHEET_URL_CSV)
         params = {
             "width": int(data.loc[data['Parameter'] == 'Width', 'Value'].values[0]),
             "height": int(data.loc[data['Parameter'] == 'Height', 'Value'].values[0]),
@@ -20,7 +22,22 @@ def fetch_parameters():
         st.error(f"Error fetching data from Google Sheet: {e}")
         return {"width": 800, "height": 800, "max_iter": 100}  # Defaults
 
-# Sidebar - Fetch Button
+# Function to update parameters in the Google Sheet
+def update_parameters(width, height, max_iter):
+    try:
+        # Create form data for each parameter update
+        payloads = [
+            {"entry.123456789": "Width", "entry.987654321": width},
+            {"entry.123456789": "Height", "entry.987654321": height},
+            {"entry.123456789": "Max Iterations", "entry.987654321": max_iter},
+        ]
+        for payload in payloads:
+            requests.post(GOOGLE_SHEET_URL_UPDATE, data=payload)
+        st.success("Parameters updated successfully!")
+    except Exception as e:
+        st.error(f"Error updating Google Sheet: {e}")
+
+# Sidebar UI for fetching and editing parameters
 st.sidebar.header("Control Panel")
 if st.sidebar.button("Fetch Parameters"):
     st.session_state.params = fetch_parameters()
@@ -29,11 +46,22 @@ if st.sidebar.button("Fetch Parameters"):
 if "params" not in st.session_state:
     st.session_state.params = fetch_parameters()
 
-# Get parameters from session state
+# Display and edit parameters in the sidebar
+st.sidebar.subheader("Edit Parameters")
 params = st.session_state.params
-width = params['width']
-height = params['height']
-max_iter = params['max_iter']
+width = st.sidebar.number_input("Width", min_value=100, max_value=2000, value=params["width"])
+height = st.sidebar.number_input("Height", min_value=100, max_value=2000, value=params["height"])
+max_iter = st.sidebar.number_input("Max Iterations", min_value=10, max_value=1000, value=params["max_iter"])
+
+# Update button
+if st.sidebar.button("Update Parameters"):
+    update_parameters(width, height, max_iter)
+    st.session_state.params = {"width": width, "height": height, "max_iter": max_iter}
+
+# Get parameters for the current run
+width = st.session_state.params["width"]
+height = st.session_state.params["height"]
+max_iter = st.session_state.params["max_iter"]
 
 # Display current parameters in the sidebar
 st.sidebar.subheader("Current Parameters")
