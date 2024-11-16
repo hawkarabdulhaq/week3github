@@ -5,49 +5,31 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
-# Google Sheets Integration Function
-def fetch_parameters(sheet_url: str, sheet_name: str):
-    try:
-        # Authenticate and fetch data
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        credentials = ServiceAccountCredentials.from_json_keyfile_name("google_credentials.json", scope)
-        client = gspread.authorize(credentials)
-        sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
-        data = sheet.get_all_records()
-        return pd.DataFrame(data)
-    except Exception as e:
-        st.sidebar.error(f"Error fetching parameters: {e}")
-        return None
-
-# Streamlit Title
-st.title("Mandelbrot Set Visualization with Google Sheets Parameters")
-
-# Google Sheet details
+# Google Sheet Details
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing"
-SHEET_NAME = "Sheet1"
 
-# Fetch parameters from Google Sheets
-params_df = fetch_parameters(SHEET_URL, SHEET_NAME)
+# Fetch parameters from Google Sheet
+def fetch_parameters(sheet_url):
+    # Use gspread to connect to the Google Sheet
+    gc = gspread.service_account()  # Ensure credentials are set up
+    sh = gc.open_by_url(sheet_url)
+    worksheet = sh.sheet1  # Access the first sheet
+    data = worksheet.get_all_records()  # Get all data as a list of dicts
+    return pd.DataFrame(data)  # Convert to DataFrame for easier use
 
-# Sidebar Parameters
-if params_df is not None:
-    st.sidebar.header("Parameters from Database")
-    
-    # Debugging: Display fetched data in sidebar
-    st.sidebar.write("Fetched Parameters:")
-    st.sidebar.dataframe(params_df)
-    
-    # Extract parameter values
-    try:
-        width = st.sidebar.slider("Width", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'width', 'Value'].values[0]))
-        height = st.sidebar.slider("Height", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'height', 'Value'].values[0]))
-        max_iter = st.sidebar.slider("Max Iterations", 10, 500, int(params_df.loc[params_df['Parameter'] == 'max_iter', 'Value'].values[0]))
-    except Exception as e:
-        st.sidebar.error(f"Error parsing parameters: {e}")
-        width, height, max_iter = 800, 800, 100
-else:
-    st.sidebar.error("Failed to fetch parameters. Using default values.")
-    width, height, max_iter = 800, 800, 100
+# Fetch parameters from the Google Sheet
+parameters_df = fetch_parameters(SHEET_URL)
+st.sidebar.header("Settings")
+
+# Set default parameters from the database
+default_width = int(parameters_df.loc[parameters_df['Parameter'] == 'Width', 'Value'].values[0])
+default_height = int(parameters_df.loc[parameters_df['Parameter'] == 'Height', 'Value'].values[0])
+default_max_iter = int(parameters_df.loc[parameters_df['Parameter'] == 'Max Iterations', 'Value'].values[0])
+
+# Sidebar Inputs
+width = st.sidebar.slider("Width", 400, 1600, default_width)
+height = st.sidebar.slider("Height", 400, 1600, default_height)
+max_iter = st.sidebar.slider("Max Iterations", 10, 500, default_max_iter)
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
