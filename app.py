@@ -1,35 +1,40 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
-# Google Sheet Details
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing"
+# Google Sheet URL and tab
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/export?format=csv&id=1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w&gid=0"
 
-# Fetch parameters from Google Sheet
-def fetch_parameters(sheet_url):
-    # Use gspread to connect to the Google Sheet
-    gc = gspread.service_account()  # Ensure credentials are set up
-    sh = gc.open_by_url(sheet_url)
-    worksheet = sh.sheet1  # Access the first sheet
-    data = worksheet.get_all_records()  # Get all data as a list of dicts
-    return pd.DataFrame(data)  # Convert to DataFrame for easier use
+# Function to fetch parameters from Google Sheet
+@st.cache_data
+def fetch_parameters():
+    try:
+        data = pd.read_csv(GOOGLE_SHEET_URL)
+        params = {
+            "width": int(data.loc[data['Parameter'] == 'Width', 'Value'].values[0]),
+            "height": int(data.loc[data['Parameter'] == 'Height', 'Value'].values[0]),
+            "max_iter": int(data.loc[data['Parameter'] == 'Max Iterations', 'Value'].values[0])
+        }
+        return params
+    except Exception as e:
+        st.error(f"Error fetching data from Google Sheet: {e}")
+        return {"width": 800, "height": 800, "max_iter": 100}  # Defaults
 
-# Fetch parameters from the Google Sheet
-parameters_df = fetch_parameters(SHEET_URL)
-st.sidebar.header("Settings")
+# Fetch parameters
+params = fetch_parameters()
+width = params['width']
+height = params['height']
+max_iter = params['max_iter']
 
-# Set default parameters from the database
-default_width = int(parameters_df.loc[parameters_df['Parameter'] == 'Width', 'Value'].values[0])
-default_height = int(parameters_df.loc[parameters_df['Parameter'] == 'Height', 'Value'].values[0])
-default_max_iter = int(parameters_df.loc[parameters_df['Parameter'] == 'Max Iterations', 'Value'].values[0])
+# Streamlit Title
+st.title("Mandelbrot Set Visualization")
 
-# Sidebar Inputs
-width = st.sidebar.slider("Width", 400, 1600, default_width)
-height = st.sidebar.slider("Height", 400, 1600, default_height)
-max_iter = st.sidebar.slider("Max Iterations", 10, 500, default_max_iter)
+# Sidebar Info
+st.sidebar.header("Fetched Parameters")
+st.sidebar.write(f"Width: {width}")
+st.sidebar.write(f"Height: {height}")
+st.sidebar.write(f"Max Iterations: {max_iter}")
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
