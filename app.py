@@ -108,12 +108,12 @@ with col5:
     with up_down[0]:
         if st.button("⬆️ Up"):
             y_shift = (viewport[3] - viewport[2]) * 0.1
-            viewport = [viewport[0], viewport[1], viewport[2] + y_shift, viewport[3] + y_shift]
+            viewport = [viewport[0], viewport[1], viewport[2] - y_shift, viewport[3] - y_shift]
             st.session_state.viewport = viewport
     with up_down[1]:
         if st.button("⬇️ Down"):
             y_shift = (viewport[3] - viewport[2]) * 0.1
-            viewport = [viewport[0], viewport[1], viewport[2] - y_shift, viewport[3] - y_shift]
+            viewport = [viewport[0], viewport[1], viewport[2] + y_shift, viewport[3] + y_shift]
             st.session_state.viewport = viewport
 with col6:
     if st.button("➡️ Right"):
