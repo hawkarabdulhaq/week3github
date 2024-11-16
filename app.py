@@ -1,44 +1,51 @@
 import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
 
-# Fetch parameters from Google Sheets
-def fetch_sheet_data(sheet_url, sheet_name):
-    # Load credentials from Streamlit secrets
-    credentials = Credentials.from_service_account_info(st.secrets["google_service_account"])
-    
-    # Authorize and connect to the Google Sheets API
-    client = gspread.authorize(credentials)
-    sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
-    
-    # Get all records and convert to DataFrame
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+# Streamlit Title
+st.title("Mandelbrot Set Visualization")
 
-# Main app
-def main():
-    st.title("Dynamic App with Google Sheets Integration")
+# Load Parameters from CSV
+parameters_file = "parameters.csv"
+parameters = pd.read_csv(parameters_file)
 
-    # Google Sheet URL and sheet name
-    sheet_url = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing"
-    sheet_name = "Sheet1"  # Replace with the correct sheet name
+# Sidebar
+st.sidebar.header("Settings")
+selected_set = st.sidebar.selectbox("Choose Parameter Set", parameters["Parameter Set"])
+selected_params = parameters[parameters["Parameter Set"] == selected_set].iloc[0]
 
-    # Fetch data from Google Sheets
-    st.write("Fetching data from Google Sheets...")
-    parameters_df = fetch_sheet_data(sheet_url, sheet_name)
-    st.write(parameters_df)  # Debugging: Display the fetched data
+# Fetch Parameters
+width = st.sidebar.slider("Width", 400, 1600, int(selected_params["Width"]))
+height = st.sidebar.slider("Height", 400, 1600, int(selected_params["Height"]))
+max_iter = st.sidebar.slider("Max Iterations", 10, 500, int(selected_params["Max Iterations"]))
 
-    # Dynamically create sliders or inputs based on parameters
-    for index, row in parameters_df.iterrows():
-        param_name = row["Parameter"]
-        min_val = int(row["Min"])
-        max_val = int(row["Max"])
-        default_val = int(row["Default"])
+# Generate Mandelbrot Set
+x = np.linspace(-2, 1, width)
+y = np.linspace(-1.5, 1.5, height)
+X, Y = np.meshgrid(x, y)
+C = X + 1j * Y
 
-        st.sidebar.slider(param_name, min_val, max_val, default_val)
+Z = np.zeros_like(C, dtype=complex)
+mandelbrot_set = np.zeros(C.shape, dtype=int)
 
-    st.write("Interact with the sliders to modify app behavior dynamically!")
+for i in range(max_iter):
+    mask = np.abs(Z) < 2
+    Z[mask] = Z[mask] * Z[mask] + C[mask]
+    mandelbrot_set += mask
 
-if __name__ == "__main__":
-    main()
+# Plotting
+fig, ax = plt.subplots(figsize=(8, 8))
+im = ax.imshow(
+    mandelbrot_set,
+    extent=(-2, 1, -1.5, 1.5),
+    cmap="coolwarm",
+    interpolation="bilinear",
+)
+plt.colorbar(im, ax=ax, label="Iterations")
+ax.set_title("Mandelbrot Set")
+ax.set_xlabel("Real Part")
+ax.set_ylabel("Imaginary Part")
+
+# Streamlit Display
+st.pyplot(fig)
