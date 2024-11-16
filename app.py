@@ -1,30 +1,27 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import json
 
-# Authenticate and connect to Google Sheets
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('key.json', scope)
-client = gspread.authorize(creds)
-
-# Open the Google Sheet
-sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing')
-worksheet = sheet.sheet1
-
-# Fetch parameters from the sheet
-data = worksheet.get_all_records()
-params = {item['Parameter']: int(item['Value']) for item in data}
+# Load data from secrets
+parameters = json.loads(st.secrets["parameters"]["data"])
 
 # Streamlit Title
 st.title("Mandelbrot Set Visualization")
 
 # Sidebar Parameters
 st.sidebar.header("Settings")
-width = st.sidebar.slider("Width", 400, 1600, params.get('Width', 800))
-height = st.sidebar.slider("Height", 400, 1600, params.get('Height', 800))
-max_iter = st.sidebar.slider("Max Iterations", 10, 500, params.get('Max Iterations', 100))
+width = st.sidebar.slider("Width", 400, 1600, 800)
+height = st.sidebar.slider("Height", 400, 1600, 800)
+max_iter = st.sidebar.slider("Max Iterations", 10, 500, 100)
+
+# Select preset values
+st.sidebar.subheader("Preset Parameters")
+selected_preset = st.sidebar.selectbox("Choose a preset", range(len(parameters)))
+
+# Apply preset values if selected
+preset = parameters[selected_preset]
+st.write(f"Using Preset: {preset}")
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
