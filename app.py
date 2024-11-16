@@ -30,7 +30,7 @@ st.markdown("""
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
 Discover the mesmerizing Mandelbrot Set with this interactive app! 
-Customize parameters or choose from predefined settings to visualize this mathematical masterpiece.
+Customize parameters, zoom in/out, or pan across the image for a complete exploration.
 """)
 
 # Sidebar
@@ -67,11 +67,10 @@ max_iter = st.sidebar.slider(
 # Dynamic Viewport Settings
 viewport = st.session_state.get("viewport", [-2.0, 1.0, -1.5, 1.5])
 
-# Zoom Buttons
+# Pan and Zoom Controls
 col1, col2, col3 = st.columns(3)
 with col1:
     if st.button("🔍 Zoom In"):
-        # Narrow the viewport to zoom in
         x_mid = (viewport[0] + viewport[1]) / 2
         y_mid = (viewport[2] + viewport[3]) / 2
         x_range = (viewport[1] - viewport[0]) / 2
@@ -87,7 +86,6 @@ with col2:
         st.session_state.viewport = viewport
 with col3:
     if st.button("🔍 Zoom Out"):
-        # Expand the viewport to zoom out
         x_mid = (viewport[0] + viewport[1]) / 2
         y_mid = (viewport[2] + viewport[3]) / 2
         x_range = (viewport[1] - viewport[0])
@@ -96,6 +94,31 @@ with col3:
             x_mid - x_range, x_mid + x_range,
             y_mid - y_range, y_mid + y_range
         ]
+        st.session_state.viewport = viewport
+
+# Pan Controls
+col4, col5, col6 = st.columns([1, 2, 1])
+with col4:
+    if st.button("⬅️ Left"):
+        x_shift = (viewport[1] - viewport[0]) * 0.1
+        viewport = [viewport[0] - x_shift, viewport[1] - x_shift, viewport[2], viewport[3]]
+        st.session_state.viewport = viewport
+with col5:
+    up_down = st.columns([1, 1])
+    with up_down[0]:
+        if st.button("⬆️ Up"):
+            y_shift = (viewport[3] - viewport[2]) * 0.1
+            viewport = [viewport[0], viewport[1], viewport[2] + y_shift, viewport[3] + y_shift]
+            st.session_state.viewport = viewport
+    with up_down[1]:
+        if st.button("⬇️ Down"):
+            y_shift = (viewport[3] - viewport[2]) * 0.1
+            viewport = [viewport[0], viewport[1], viewport[2] - y_shift, viewport[3] - y_shift]
+            st.session_state.viewport = viewport
+with col6:
+    if st.button("➡️ Right"):
+        x_shift = (viewport[1] - viewport[0]) * 0.1
+        viewport = [viewport[0] + x_shift, viewport[1] + x_shift, viewport[2], viewport[3]]
         st.session_state.viewport = viewport
 
 # Generate Mandelbrot Set
