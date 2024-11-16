@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from io import BytesIO
 
 # Page Configuration
 st.set_page_config(
@@ -31,24 +30,21 @@ st.markdown("""
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
 Discover the mesmerizing Mandelbrot Set with this interactive app! 
-Customize parameters, zoom into specific regions, and download your favorite visuals.
+Customize parameters or choose from predefined settings to visualize this mathematical masterpiece.
 """)
-
-# Load Parameters
-parameters_file = "parameters.csv"
-parameters = pd.read_csv(parameters_file)
 
 # Sidebar
 st.sidebar.title("Control Panel")
+parameters_file = "parameters.csv"
+parameters = pd.read_csv(parameters_file)
 selected_set = st.sidebar.selectbox(
     "Select Parameter Preset",
     parameters["Parameter Set"],
     help="Choose a predefined parameter set for the Mandelbrot visualization."
 )
-
 selected_params = parameters[parameters["Parameter Set"] == selected_set].iloc[0]
 
-# Fetch Parameters
+# Sidebar Parameters
 width = st.sidebar.slider(
     "Canvas Width (Pixels)",
     400, 2000,
@@ -68,16 +64,43 @@ max_iter = st.sidebar.slider(
     help="Set the maximum number of iterations for rendering."
 )
 
-# Zoom Controls
-st.sidebar.markdown("### Zoom Controls")
-x_min = st.sidebar.number_input("X Min", value=-2.0, step=0.1)
-x_max = st.sidebar.number_input("X Max", value=1.0, step=0.1)
-y_min = st.sidebar.number_input("Y Min", value=-1.5, step=0.1)
-y_max = st.sidebar.number_input("Y Max", value=1.5, step=0.1)
+# Dynamic Viewport Settings
+viewport = st.session_state.get("viewport", [-2.0, 1.0, -1.5, 1.5])
+
+# Zoom Buttons
+col1, col2, col3 = st.columns(3)
+with col1:
+    if st.button("🔍 Zoom In"):
+        # Narrow the viewport to zoom in
+        x_mid = (viewport[0] + viewport[1]) / 2
+        y_mid = (viewport[2] + viewport[3]) / 2
+        x_range = (viewport[1] - viewport[0]) / 2
+        y_range = (viewport[3] - viewport[2]) / 2
+        viewport = [
+            x_mid - x_range / 2, x_mid + x_range / 2,
+            y_mid - y_range / 2, y_mid + y_range / 2
+        ]
+        st.session_state.viewport = viewport
+with col2:
+    if st.button("🔄 Reset View"):
+        viewport = [-2.0, 1.0, -1.5, 1.5]
+        st.session_state.viewport = viewport
+with col3:
+    if st.button("🔍 Zoom Out"):
+        # Expand the viewport to zoom out
+        x_mid = (viewport[0] + viewport[1]) / 2
+        y_mid = (viewport[2] + viewport[3]) / 2
+        x_range = (viewport[1] - viewport[0])
+        y_range = (viewport[3] - viewport[2])
+        viewport = [
+            x_mid - x_range, x_mid + x_range,
+            y_mid - y_range, y_mid + y_range
+        ]
+        st.session_state.viewport = viewport
 
 # Generate Mandelbrot Set
-x = np.linspace(x_min, x_max, width)
-y = np.linspace(y_min, y_max, height)
+x = np.linspace(viewport[0], viewport[1], width)
+y = np.linspace(viewport[2], viewport[3], height)
 X, Y = np.meshgrid(x, y)
 C = X + 1j * Y
 
@@ -91,45 +114,19 @@ for i in range(max_iter):
 
 # Visualization
 st.subheader("🔍 Mandelbrot Visualization")
-col1, col2 = st.columns([3, 1])
-
-with col1:
-    fig, ax = plt.subplots(figsize=(10, 8))
-    im = ax.imshow(
-        mandelbrot_set,
-        extent=(x_min, x_max, y_min, y_max),
-        cmap="inferno",
-        interpolation="bilinear"
-    )
-    plt.colorbar(im, ax=ax, label="Iterations")
-    ax.set_title("Mandelbrot Set", fontsize=14)
-    ax.set_xlabel("Real Part")
-    ax.set_ylabel("Imaginary Part")
-
-    st.pyplot(fig)
-
-    # Downloadable Image
-    buffer = BytesIO()
-    fig.savefig(buffer, format="png", bbox_inches="tight")
-    buffer.seek(0)
-    st.download_button(
-        label="Download Mandelbrot Image",
-        data=buffer,
-        file_name="mandelbrot_set.png",
-        mime="image/png"
-    )
-
-with col2:
-    st.info("""
-    **Tips:**
-    - Use the zoom controls to focus on specific regions.
-    - Adjust iterations for more detailed visuals.
-    - Download your creations and share with friends!
-    """, icon="ℹ️")
-
-    st.markdown("**Performance Note:** Increasing width, height, or iterations may slow rendering.")
+fig, ax = plt.subplots(figsize=(10, 8))
+im = ax.imshow(
+    mandelbrot_set,
+    extent=(viewport[0], viewport[1], viewport[2], viewport[3]),
+    cmap="inferno",
+    interpolation="bilinear"
+)
+plt.colorbar(im, ax=ax, label="Iterations")
+ax.set_title("Mandelbrot Set", fontsize=14)
+ax.set_xlabel("Real Part")
+ax.set_ylabel("Imaginary Part")
+st.pyplot(fig)
 
 # Footer
 st.sidebar.markdown("---")
 st.sidebar.markdown("Built with ❤️ by Hawkar")
-
