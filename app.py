@@ -1,15 +1,39 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+
+# Google Sheets Integration
+def fetch_parameters(sheet_url: str, sheet_name: str):
+    # Authenticate and fetch data
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    credentials = ServiceAccountCredentials.from_json_keyfile_name("google_credentials.json", scope)
+    client = gspread.authorize(credentials)
+    sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
 
 # Streamlit Title
-st.title("Mandelbrot Set Visualization")
+st.title("Mandelbrot Set Visualization with Parameters from Google Sheet")
 
-# Sidebar Parameters
-st.sidebar.header("Settings")
-width = st.sidebar.slider("Width", 400, 1600, 800)
-height = st.sidebar.slider("Height", 400, 1600, 800)
-max_iter = st.sidebar.slider("Max Iterations", 10, 500, 100)
+# Google Sheet details
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing"
+SHEET_NAME = "Sheet1"
+
+# Fetch parameters
+try:
+    st.sidebar.header("Parameters from Database")
+    params_df = fetch_parameters(SHEET_URL, SHEET_NAME)
+    
+    # Extracting parameter values
+    width = st.sidebar.slider("Width", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'width', 'Value'].values[0]))
+    height = st.sidebar.slider("Height", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'height', 'Value'].values[0]))
+    max_iter = st.sidebar.slider("Max Iterations", 10, 500, int(params_df.loc[params_df['Parameter'] == 'max_iter', 'Value'].values[0]))
+except Exception as e:
+    st.sidebar.error("Error fetching parameters. Using defaults.")
+    width, height, max_iter = 800, 800, 100
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
