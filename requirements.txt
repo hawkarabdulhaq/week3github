@@ -1,4 +1,6 @@
-streamlit
-numpy
-matplotlib
-pandas
+Parameter Set,Width,Height,Max Iterations
+Default,800,800,100
+High Detail,1600,1600,500
+Wide View,2000,800,300
+Zoomed View,600,600,1000
+Compact,400,400,200
