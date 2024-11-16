@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.graph_objects as go
 
 # Page Configuration
 st.set_page_config(
@@ -10,10 +10,24 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom Styles
+st.markdown("""
+    <style>
+    .sidebar .sidebar-content {
+        background-color: #f4f4f8;
+        padding: 10px;
+    }
+    .css-1aumxhk, .css-1avcm0n {
+        color: #0A3D62 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Title and Description
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
-Explore the Mandelbrot Set interactively with infinite zoom capabilities. Use your mouse to zoom in and pan around the visualization in real time.
+Discover the mesmerizing Mandelbrot Set with this interactive app! 
+Customize parameters or choose from predefined settings to visualize this mathematical masterpiece.
 """)
 
 # Load Parameters
@@ -31,17 +45,64 @@ selected_set = st.sidebar.selectbox(
 selected_params = parameters[parameters["Parameter Set"] == selected_set].iloc[0]
 
 # Fetch Parameters
-width = int(selected_params["Width"])
-height = int(selected_params["Height"])
-max_iter = int(selected_params["Max Iterations"])
+width = st.sidebar.slider(
+    "Canvas Width (Pixels)",
+    400, 2000,
+    int(selected_params["Width"]),
+    help="Adjust the width of the visualization canvas."
+)
+height = st.sidebar.slider(
+    "Canvas Height (Pixels)",
+    400, 2000,
+    int(selected_params["Height"]),
+    help="Adjust the height of the visualization canvas."
+)
+max_iter = st.sidebar.slider(
+    "Max Iterations",
+    10, 2000,
+    int(selected_params["Max Iterations"]),
+    help="Set the maximum number of iterations for rendering."
+)
 
-# Initial Bounds
-x_min, x_max = st.sidebar.slider("Real Part Range", -2.0, 2.0, (-2.0, 1.0))
-y_min, y_max = st.sidebar.slider("Imaginary Part Range", -2.0, 2.0, (-1.5, 1.5))
+# Advanced Parameters
+real_min = st.sidebar.slider(
+    "Real Axis Minimum",
+    -3.0, 0.0,
+    float(selected_params["Real Min"]),
+    step=0.1,
+    help="Set the minimum value of the real axis."
+)
+real_max = st.sidebar.slider(
+    "Real Axis Maximum",
+    0.0, 3.0,
+    float(selected_params["Real Max"]),
+    step=0.1,
+    help="Set the maximum value of the real axis."
+)
+imag_min = st.sidebar.slider(
+    "Imaginary Axis Minimum",
+    -2.0, 0.0,
+    float(selected_params["Imag Min"]),
+    step=0.1,
+    help="Set the minimum value of the imaginary axis."
+)
+imag_max = st.sidebar.slider(
+    "Imaginary Axis Maximum",
+    0.0, 2.0,
+    float(selected_params["Imag Max"]),
+    step=0.1,
+    help="Set the maximum value of the imaginary axis."
+)
+colormap = st.sidebar.selectbox(
+    "Colormap",
+    ["inferno", "viridis", "plasma", "cividis", "coolwarm", "magma"],
+    index=["inferno", "viridis", "plasma", "cividis", "coolwarm", "magma"].index(selected_params["Colormap"]),
+    help="Choose a colormap for visualization."
+)
 
 # Generate Mandelbrot Set
-x = np.linspace(x_min, x_max, width)
-y = np.linspace(y_min, y_max, height)
+x = np.linspace(real_min, real_max, width)
+y = np.linspace(imag_min, imag_max, height)
 X, Y = np.meshgrid(x, y)
 C = X + 1j * Y
 
@@ -51,30 +112,34 @@ mandelbrot_set = np.zeros(C.shape, dtype=int)
 for i in range(max_iter):
     mask = np.abs(Z) < 2
     Z[mask] = Z[mask] * Z[mask] + C[mask]
-    mandelbrot_set[mask] = i
+    mandelbrot_set += mask
 
-# Create a Plotly Figure
-fig = go.Figure(
-    data=go.Heatmap(
-        z=mandelbrot_set,
-        x=x,
-        y=y,
-        colorscale="Inferno",
-        showscale=True,
-        colorbar=dict(title="Iterations")
+# Visualization
+st.subheader("🔍 Mandelbrot Visualization")
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    fig, ax = plt.subplots(figsize=(10, 8))
+    im = ax.imshow(
+        mandelbrot_set,
+        extent=(real_min, real_max, imag_min, imag_max),
+        cmap=colormap,
+        interpolation="bilinear"
     )
-)
+    plt.colorbar(im, ax=ax, label="Iterations")
+    ax.set_title("Mandelbrot Set", fontsize=14)
+    ax.set_xlabel("Real Part")
+    ax.set_ylabel("Imaginary Part")
 
-fig.update_layout(
-    title="Interactive Mandelbrot Set",
-    xaxis_title="Real Part",
-    yaxis_title="Imaginary Part",
-    autosize=True,
-    dragmode="pan",
-)
+    st.pyplot(fig)
 
-# Display the Plotly Figure
-st.plotly_chart(fig, use_container_width=True)
+with col2:
+    st.info("""
+    **Tips:**
+    - Adjust the sliders to fine-tune your visualization.
+    - Explore different axis ranges and colormaps for unique results.
+    - Higher iterations reveal more detail but take longer to compute.
+    """, icon="ℹ️")
 
 # Footer
 st.sidebar.markdown("---")
