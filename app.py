@@ -5,34 +5,48 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
-# Google Sheets Integration
+# Google Sheets Integration Function
 def fetch_parameters(sheet_url: str, sheet_name: str):
-    # Authenticate and fetch data
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    credentials = ServiceAccountCredentials.from_json_keyfile_name("google_credentials.json", scope)
-    client = gspread.authorize(credentials)
-    sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+    try:
+        # Authenticate and fetch data
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        credentials = ServiceAccountCredentials.from_json_keyfile_name("google_credentials.json", scope)
+        client = gspread.authorize(credentials)
+        sheet = client.open_by_url(sheet_url).worksheet(sheet_name)
+        data = sheet.get_all_records()
+        return pd.DataFrame(data)
+    except Exception as e:
+        st.sidebar.error(f"Error fetching parameters: {e}")
+        return None
 
 # Streamlit Title
-st.title("Mandelbrot Set Visualization with Parameters from Google Sheet")
+st.title("Mandelbrot Set Visualization with Google Sheets Parameters")
 
 # Google Sheet details
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing"
 SHEET_NAME = "Sheet1"
 
-# Fetch parameters
-try:
+# Fetch parameters from Google Sheets
+params_df = fetch_parameters(SHEET_URL, SHEET_NAME)
+
+# Sidebar Parameters
+if params_df is not None:
     st.sidebar.header("Parameters from Database")
-    params_df = fetch_parameters(SHEET_URL, SHEET_NAME)
     
-    # Extracting parameter values
-    width = st.sidebar.slider("Width", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'width', 'Value'].values[0]))
-    height = st.sidebar.slider("Height", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'height', 'Value'].values[0]))
-    max_iter = st.sidebar.slider("Max Iterations", 10, 500, int(params_df.loc[params_df['Parameter'] == 'max_iter', 'Value'].values[0]))
-except Exception as e:
-    st.sidebar.error("Error fetching parameters. Using defaults.")
+    # Debugging: Display fetched data in sidebar
+    st.sidebar.write("Fetched Parameters:")
+    st.sidebar.dataframe(params_df)
+    
+    # Extract parameter values
+    try:
+        width = st.sidebar.slider("Width", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'width', 'Value'].values[0]))
+        height = st.sidebar.slider("Height", 400, 1600, int(params_df.loc[params_df['Parameter'] == 'height', 'Value'].values[0]))
+        max_iter = st.sidebar.slider("Max Iterations", 10, 500, int(params_df.loc[params_df['Parameter'] == 'max_iter', 'Value'].values[0]))
+    except Exception as e:
+        st.sidebar.error(f"Error parsing parameters: {e}")
+        width, height, max_iter = 800, 800, 100
+else:
+    st.sidebar.error("Failed to fetch parameters. Using default values.")
     width, height, max_iter = 800, 800, 100
 
 # Generate Mandelbrot Set
