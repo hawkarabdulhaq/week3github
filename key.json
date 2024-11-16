@@ -1,13 +1,57 @@
-{
-  "type": "service_account",
-  "project_id": "python-projects-438008",
-  "private_key_id": "0cc72d2f93670ce8b36d955b87c874dd2f01da50",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDpqoXzCfTfikww\nvVFXF3fYWpcvsieeNIK1kCZeuIj0uOArzDZmCU6IYU2BKRKY6EExcqHzFxx+M3XV\nE/Z+djTKBxbk49GWRDxWJR+q7Wri2tnyo5ZsPfhJncPSmpInibvyOD8lfqUlKKP8\nPokgg2+B0KJeWdBBcyTWrDrPCt0gOu2fO9wcJMWAsh9JRj6m5rZo3NLmhyHgu7Gz\nGWq63bnr5emQgmq+xYW6QfMxXwoizgJynFkGnbW40UxxnUWtVdGMjQl2ZDDIF+Lo\nZ1dHmJTCp0SPnzf8gzPQi1Hq3Nm6IIIjlBFuUoPPFht416zUZCwbbxeoCoZWzF3M\nVTz0kxPPAgMBAAECggEACj4piVoDjB8FsFHu3wijfhjugq6RElwj6gNBI1V8hMRr\n6I+W8jRwkbA46QiyDNY1hrjghNrw//k6g5Yl79eNAIQnX+46pux5Jp+RpU5V/qQa\n+goWEyBI93/ScIjKZQWidv+PM7y6+YeFX2PQYrFQRy+sRm2HywQEoTfDNjCNjpbh\nPmSdhF6p+GTzuD4fE6JAZtfNF93u3vE3A5VudMW1pDPCX51BqxDNfGjULJS8Qtun\n7vZt0kDyl+GBT1HS5BEHuQlosica215KiVf/NAkQhiJEcdClneXPcgpoSW7cjmkf\nDppm61WDHLzXi9Z8+sksS6r3ojd2F4McieRiam+81QKBgQD+f3lF7SkD4G42uvwb\noqNIahByC3tT0rpxd80Uwf1LLS/mgeKa/MZryuA2YPP08kxMHOwAcUsCPFynI/Wa\nHFXJiVV01gDFNuZ4NCUqOxnMQpGO6yXL4jjJ9lyPoWRKUH6sFrto5jLf0TadMyz+\nWWThY9xm5bevYY51f64RYonUuwKBgQDrC5MCdEudHXzLnz/nuHIPojG/U+C2rJ06\nZeIRXlgWDtwozob74ic2Gtb4UYDLlzMAZ6CQIKNvI4O0CXz/RBMxqnOAaGKeCS6i\nFtdyaybELPaSv5IVETzSv69zNyzYySwyuFfoBFH6YIXHMXNM+94ID8ixwKqlRCz8\nmfpqqXGV/QKBgQDpoRYwhlXntCkZXzA/Il+pA41TVI0D12jG74a57pfbYoEdp9Di\nHPj+TYDlCr4J+EDogoh4o4iLZeRcn5tAvZBXchacKjUM1qheYuhXS2gUZmv/eoj5\nERS2+s3gIPXTbu/KhRfIZcMASqxLRYahfGkqrCTR5UJp4zIHVY3zcbU8LwKBgD0N\nWZc2m/lokmTVraTD3STAbYmUAPeSKJjlo+39AoZgP8F9u8QrfyHnoNUJXpoDYSUG\nxccKI0mYAPq/yC8KAK5S5wOAmbURD4LcygOXX49vWnDNv+UnABSB49HakBSTVJ6s\nEXFbxetyLO2Lo7ZoacjQSMIbGHgrGEBYwpn3/2AFAoGADPLA97WQ3Cgp7Ed47EQN\n3kBnPtuLMbc8yAjDjRJjIO/Mdk0PNm5NQrUBVCz30iGxmLKM85eOOaqr3RmlJVjV\nuVaXnG2GcJw11uan+OsazTJ1aVoq0PBPXInlpSj1KP6g0fP+gsocmZHn9J9c7isE\n/U2mjvpzzp8Yc1/bBQMjkOQ=\n-----END PRIVATE KEY-----\n",
-  "client_email": "python-programming@python-projects-438008.iam.gserviceaccount.com",
-  "client_id": "110838080672882355824",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/python-programming%40python-projects-438008.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# Authenticate and connect to Google Sheets
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('key.json', scope)
+client = gspread.authorize(creds)
+
+# Open the Google Sheet
+sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing')
+worksheet = sheet.sheet1
+
+# Fetch parameters from the sheet
+data = worksheet.get_all_records()
+params = {item['Parameter']: int(item['Value']) for item in data}
+
+# Streamlit Title
+st.title("Mandelbrot Set Visualization")
+
+# Sidebar Parameters
+st.sidebar.header("Settings")
+width = st.sidebar.slider("Width", 400, 1600, params.get('Width', 800))
+height = st.sidebar.slider("Height", 400, 1600, params.get('Height', 800))
+max_iter = st.sidebar.slider("Max Iterations", 10, 500, params.get('Max Iterations', 100))
+
+# Generate Mandelbrot Set
+x = np.linspace(-2, 1, width)
+y = np.linspace(-1.5, 1.5, height)
+X, Y = np.meshgrid(x, y)
+C = X + 1j * Y
+
+Z = np.zeros_like(C, dtype=complex)
+mandelbrot_set = np.zeros(C.shape, dtype=int)
+
+for i in range(max_iter):
+    mask = np.abs(Z) < 2
+    Z[mask] = Z[mask] * Z[mask] + C[mask]
+    mandelbrot_set += mask
+
+# Plotting
+fig, ax = plt.subplots(figsize=(8, 8))
+im = ax.imshow(
+    mandelbrot_set,
+    extent=(-2, 1, -1.5, 1.5),
+    cmap="coolwarm",
+    interpolation="bilinear",
+)
+plt.colorbar(im, ax=ax, label="Iterations")
+ax.set_title("Mandelbrot Set")
+ax.set_xlabel("Real Part")
+ax.set_ylabel("Imaginary Part")
+
+# Streamlit Display
+st.pyplot(fig)
