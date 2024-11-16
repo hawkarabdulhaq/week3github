@@ -20,20 +20,29 @@ def fetch_parameters():
         st.error(f"Error fetching data from Google Sheet: {e}")
         return {"width": 800, "height": 800, "max_iter": 100}  # Defaults
 
-# Fetch parameters
-params = fetch_parameters()
+# Sidebar - Fetch Button
+st.sidebar.header("Control Panel")
+if st.sidebar.button("Fetch Parameters"):
+    st.session_state.params = fetch_parameters()
+
+# Initialize session state for parameters
+if "params" not in st.session_state:
+    st.session_state.params = fetch_parameters()
+
+# Get parameters from session state
+params = st.session_state.params
 width = params['width']
 height = params['height']
 max_iter = params['max_iter']
 
-# Streamlit Title
-st.title("Mandelbrot Set Visualization")
-
-# Sidebar Info
-st.sidebar.header("Fetched Parameters")
+# Display current parameters in the sidebar
+st.sidebar.subheader("Current Parameters")
 st.sidebar.write(f"Width: {width}")
 st.sidebar.write(f"Height: {height}")
 st.sidebar.write(f"Max Iterations: {max_iter}")
+
+# Streamlit Title
+st.title("Mandelbrot Set Visualization")
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
