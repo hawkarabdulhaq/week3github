@@ -14,7 +14,7 @@ st.set_page_config(
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
 Explore the mesmerizing Mandelbrot Set interactively! 
-Drag to select a region on the plot, then click "Zoom In" to update the view with the selected region.
+Drag to select a region on the plot, and then click "Zoom In" to zoom into the fractal.
 """)
 
 # Sidebar Parameters
@@ -76,44 +76,23 @@ fig.update_layout(
     xaxis_title="Real Part",
     yaxis_title="Imaginary Part",
     dragmode="select",
-    width=1200,
+    width=800,
     height=800
 )
 
-# Streamlit Plotly Component
-selection_data = st.plotly_chart(fig, use_container_width=True)
+# Display Plotly Plot
+plot = st.plotly_chart(fig, use_container_width=True)
 
-# Capture the selected region
-selected_region = st.session_state.get("selected_region", None)
-if selection_data:
-    selection = st.session_state.get("plotly_selected_data", None)
-    if selection:
-        st.session_state.selected_region = {
-            "x_min": selection["range"]["x"][0],
-            "x_max": selection["range"]["x"][1],
-            "y_min": selection["range"]["y"][0],
-            "y_max": selection["range"]["y"][1],
-        }
-        st.sidebar.success("Region selected! Click 'Zoom In' to apply.")
+# Capture Selection Data
+selection = st.session_state.get("selection_data", None)
+if "selection_data" not in st.session_state:
+    st.session_state.selection_data = None
 
-# Sidebar Zoom Controls
-st.sidebar.subheader("Zoom Controls")
-if st.session_state.get("selected_region"):
-    region = st.session_state.selected_region
-    st.sidebar.write(f"X Range: {region['x_min']} to {region['x_max']}")
-    st.sidebar.write(f"Y Range: {region['y_min']} to {region['y_max']}")
-
-    if st.sidebar.button("Zoom In"):
-        st.session_state.viewport = [
-            region["x_min"],
-            region["x_max"],
-            region["y_min"],
-            region["y_max"],
-        ]
-        st.experimental_rerun()
-
-# Reset Viewport Button
-if st.sidebar.button("Reset View"):
-    st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
-    st.session_state.selected_region = None
-    st.experimental_rerun()
+# Sidebar for Selected Region and Zoom In
+st.sidebar.header("Zoom Controls")
+if plot and plot.json_events:
+    for event in plot.json_events:
+        if event["type"] == "plotly_selected":
+            selected_region = event["range"]
+            st.sidebar.write("Selected Region")
+            st.sidebar.write(selected_region)
