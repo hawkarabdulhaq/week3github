@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from io import BytesIO
 
 # Page Configuration
 st.set_page_config(
@@ -17,7 +18,10 @@ st.markdown("""
         background-color: #f4f4f8;
         padding: 10px;
     }
-    .css-1aumxhk, .css-1avcm0n {
+    .css-1aumxhk {
+        color: #0A3D62 !important;
+    }
+    .css-1avcm0n {
         color: #0A3D62 !important;
     }
     </style>
@@ -27,7 +31,7 @@ st.markdown("""
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
 Discover the mesmerizing Mandelbrot Set with this interactive app! 
-Customize parameters or choose from predefined settings to visualize this mathematical masterpiece.
+Customize parameters, zoom into specific regions, and download your favorite visuals.
 """)
 
 # Load Parameters
@@ -59,50 +63,21 @@ height = st.sidebar.slider(
 )
 max_iter = st.sidebar.slider(
     "Max Iterations",
-    10, 2000,
+    10, 1000,
     int(selected_params["Max Iterations"]),
     help="Set the maximum number of iterations for rendering."
 )
 
-# Advanced Parameters
-real_min = st.sidebar.slider(
-    "Real Axis Minimum",
-    -3.0, 0.0,
-    float(selected_params["Real Min"]),
-    step=0.1,
-    help="Set the minimum value of the real axis."
-)
-real_max = st.sidebar.slider(
-    "Real Axis Maximum",
-    0.0, 3.0,
-    float(selected_params["Real Max"]),
-    step=0.1,
-    help="Set the maximum value of the real axis."
-)
-imag_min = st.sidebar.slider(
-    "Imaginary Axis Minimum",
-    -2.0, 0.0,
-    float(selected_params["Imag Min"]),
-    step=0.1,
-    help="Set the minimum value of the imaginary axis."
-)
-imag_max = st.sidebar.slider(
-    "Imaginary Axis Maximum",
-    0.0, 2.0,
-    float(selected_params["Imag Max"]),
-    step=0.1,
-    help="Set the maximum value of the imaginary axis."
-)
-colormap = st.sidebar.selectbox(
-    "Colormap",
-    ["inferno", "viridis", "plasma", "cividis", "coolwarm", "magma"],
-    index=["inferno", "viridis", "plasma", "cividis", "coolwarm", "magma"].index(selected_params["Colormap"]),
-    help="Choose a colormap for visualization."
-)
+# Zoom Controls
+st.sidebar.markdown("### Zoom Controls")
+x_min = st.sidebar.number_input("X Min", value=-2.0, step=0.1)
+x_max = st.sidebar.number_input("X Max", value=1.0, step=0.1)
+y_min = st.sidebar.number_input("Y Min", value=-1.5, step=0.1)
+y_max = st.sidebar.number_input("Y Max", value=1.5, step=0.1)
 
 # Generate Mandelbrot Set
-x = np.linspace(real_min, real_max, width)
-y = np.linspace(imag_min, imag_max, height)
+x = np.linspace(x_min, x_max, width)
+y = np.linspace(y_min, y_max, height)
 X, Y = np.meshgrid(x, y)
 C = X + 1j * Y
 
@@ -122,8 +97,8 @@ with col1:
     fig, ax = plt.subplots(figsize=(10, 8))
     im = ax.imshow(
         mandelbrot_set,
-        extent=(real_min, real_max, imag_min, imag_max),
-        cmap=colormap,
+        extent=(x_min, x_max, y_min, y_max),
+        cmap="inferno",
         interpolation="bilinear"
     )
     plt.colorbar(im, ax=ax, label="Iterations")
@@ -133,13 +108,26 @@ with col1:
 
     st.pyplot(fig)
 
+    # Downloadable Image
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png", bbox_inches="tight")
+    buffer.seek(0)
+    st.download_button(
+        label="Download Mandelbrot Image",
+        data=buffer,
+        file_name="mandelbrot_set.png",
+        mime="image/png"
+    )
+
 with col2:
     st.info("""
     **Tips:**
-    - Adjust the sliders to fine-tune your visualization.
-    - Explore different axis ranges and colormaps for unique results.
-    - Higher iterations reveal more detail but take longer to compute.
+    - Use the zoom controls to focus on specific regions.
+    - Adjust iterations for more detailed visuals.
+    - Download your creations and share with friends!
     """, icon="ℹ️")
+
+    st.markdown("**Performance Note:** Increasing width, height, or iterations may slow rendering.")
 
 # Footer
 st.sidebar.markdown("---")
