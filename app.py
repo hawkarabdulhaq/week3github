@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 
-# Google Sheet API for export and update
+# Google Sheet public CSV and Sheets API link
 GOOGLE_SHEET_URL_CSV = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/export?format=csv&id=1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w&gid=0"
-GOOGLE_SHEET_URL_UPDATE = "https://docs.google.com/forms/d/e/1FAIpQLSdTJDCLxRY_79B5lPXXzW4KH8YrRrlTYBiQAz3QHaxIx_gNOA/formResponse"
+GOOGLE_SHEET_URL_UPDATE = "https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/values/Sheet1!A1:append?valueInputOption=USER_ENTERED"
 
 # Function to fetch parameters from Google Sheet
 def fetch_parameters():
@@ -25,15 +25,25 @@ def fetch_parameters():
 # Function to update parameters in the Google Sheet
 def update_parameters(width, height, max_iter):
     try:
-        # Create form data for each parameter update
-        payloads = [
-            {"entry.123456789": "Width", "entry.987654321": width},
-            {"entry.123456789": "Height", "entry.987654321": height},
-            {"entry.123456789": "Max Iterations", "entry.987654321": max_iter},
-        ]
-        for payload in payloads:
-            requests.post(GOOGLE_SHEET_URL_UPDATE, data=payload)
-        st.success("Parameters updated successfully!")
+        # Prepare data for the update
+        update_data = {
+            "range": "Sheet1!A1:C3",
+            "majorDimension": "ROWS",
+            "values": [
+                ["Parameter", "Value"],
+                ["Width", width],
+                ["Height", height],
+                ["Max Iterations", max_iter]
+            ]
+        }
+        response = requests.put(
+            GOOGLE_SHEET_URL_UPDATE,
+            json=update_data,
+        )
+        if response.status_code == 200:
+            st.success("Parameters updated successfully!")
+        else:
+            st.error(f"Failed to update sheet: {response.text}")
     except Exception as e:
         st.error(f"Error updating Google Sheet: {e}")
 
