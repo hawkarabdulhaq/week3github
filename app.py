@@ -35,9 +35,6 @@ max_iter = st.sidebar.slider(
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
-if "selected_region" not in st.session_state:
-    st.session_state.selected_region = st.session_state.viewport
-
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
     x = np.linspace(viewport[0], viewport[1], width)
@@ -72,19 +69,30 @@ fig.update_layout(
     xaxis_title="Real Part",
     yaxis_title="Imaginary Part",
     dragmode="select",
-    width=800,
-    height=800
+    width=width,
+    height=height
 )
 
-# Plotly event selection
-selected_points = st.plotly_chart(fig, use_container_width=True)
+# Display the Plotly chart and capture selection
+chart = st.plotly_chart(fig, use_container_width=True)
+selected_region = st.get_plotly_selection(chart)
 
 # Sidebar Section for Selected Region and Zoom Controls
 st.sidebar.header("Zoom Controls")
-if st.session_state.selected_region:
+
+# Default values
+x_min, x_max = viewport[0], viewport[1]
+y_min, y_max = viewport[2], viewport[3]
+
+# Update viewport based on selection
+if selected_region and 'range' in selected_region:
+    x_min = selected_region['range']['x'][0]
+    x_max = selected_region['range']['x'][1]
+    y_min = selected_region['range']['y'][0]
+    y_max = selected_region['range']['y'][1]
+    st.session_state.selected_region = [x_min, x_max, y_min, y_max]
+elif "selected_region" in st.session_state:
     x_min, x_max, y_min, y_max = st.session_state.selected_region
-else:
-    x_min, x_max, y_min, y_max = viewport
 
 # Update sidebar inputs dynamically
 x_min = st.sidebar.number_input("X Min", value=x_min)
