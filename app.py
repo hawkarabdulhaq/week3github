@@ -77,7 +77,7 @@ fig.update_layout(
 )
 
 # Display Plotly Chart
-plot = st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 # Manual Region Selection
 st.sidebar.header("Zoom Controls")
@@ -90,11 +90,10 @@ y_max = st.sidebar.number_input("Y Max", value=viewport[3])
 if st.sidebar.button("Zoom In"):
     if x_min < x_max and y_min < y_max:
         st.session_state.viewport = [x_min, x_max, y_min, y_max]
-        st.experimental_rerun()
-    else:
-        st.sidebar.error("Invalid region! Ensure X Min < X Max and Y Min < Y Max.")
+        st.experimental_set_query_params(viewport=st.session_state.viewport)
+        st.session_state.selected_region = None
 
 # Reset Viewport
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
-    st.experimental_rerun()
+    st.experimental_set_query_params(viewport=st.session_state.viewport)
