@@ -1,36 +1,30 @@
-import sqlite3
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-# Function to fetch parameters from the database
-def get_parameters():
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    
-    # Fetch the latest parameters (you could add logic to fetch specific ones)
-    cursor.execute("SELECT width, height, max_iter FROM parameters ORDER BY id DESC LIMIT 1")
-    parameters = cursor.fetchone()  # Fetch the first row (latest parameters)
-    
-    conn.close()
-    
-    # Return the parameters if found, otherwise default values
-    if parameters:
-        return parameters
-    else:
-        return (800, 800, 100)  # Default values
+# Authenticate and connect to Google Sheets
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('path_to_your_service_account.json', scope)
+client = gspread.authorize(creds)
+
+# Open the Google Sheet
+sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1okyZW0Y20lOq7iVKdyTKdztUmpwGu1ARmhzsOH4vR5w/edit?usp=sharing')
+worksheet = sheet.sheet1
+
+# Fetch parameters from the sheet
+data = worksheet.get_all_records()
+params = {item['Parameter']: int(item['Value']) for item in data}
 
 # Streamlit Title
 st.title("Mandelbrot Set Visualization")
 
-# Fetch parameters from the database
-width, height, max_iter = get_parameters()
-
-# Sidebar for adjusting parameters
+# Sidebar Parameters
 st.sidebar.header("Settings")
-width = st.sidebar.slider("Width", 400, 1600, width)
-height = st.sidebar.slider("Height", 400, 1600, height)
-max_iter = st.sidebar.slider("Max Iterations", 10, 500, max_iter)
+width = st.sidebar.slider("Width", 400, 1600, params.get('Width', 800))
+height = st.sidebar.slider("Height", 400, 1600, params.get('Height', 800))
+max_iter = st.sidebar.slider("Max Iterations", 10, 500, params.get('Max Iterations', 100))
 
 # Generate Mandelbrot Set
 x = np.linspace(-2, 1, width)
