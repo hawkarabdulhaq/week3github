@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import plotly.express as px
+from streamlit_plotly_events import plotly_events
 
 # Page Configuration
 st.set_page_config(
@@ -35,6 +36,9 @@ max_iter = st.sidebar.slider(
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
+if "selected_region" not in st.session_state:
+    st.session_state.selected_region = None
+
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
     x = np.linspace(viewport[0], viewport[1], width)
@@ -54,16 +58,17 @@ def generate_mandelbrot(viewport, width, height, max_iter):
 
 # Generate Mandelbrot Set
 viewport = st.session_state.viewport
-mandelbrot_set, x, y = generate_mandelbrot(viewport, width, height, max_iter)
+mandelbrot_set, x_vals, y_vals = generate_mandelbrot(viewport, width, height, max_iter)
 
 # Create Plotly Interactive Plot
 fig = px.imshow(
     mandelbrot_set,
     labels=dict(color="Iterations"),
-    x=x,
-    y=y,
+    x=x_vals,
+    y=y_vals,
     color_continuous_scale="inferno",
-    origin="lower"
+    origin="lower",
+    aspect='auto'
 )
 fig.update_layout(
     xaxis_title="Real Part",
@@ -73,26 +78,27 @@ fig.update_layout(
     height=height
 )
 
-# Display the Plotly chart and capture selection
-chart = st.plotly_chart(fig, use_container_width=True)
-selected_region = st.get_plotly_selection(chart)
+# Use streamlit-plotly-events to capture selection
+selected_points = plotly_events(fig, select_event=True, override_width='100%')
 
 # Sidebar Section for Selected Region and Zoom Controls
 st.sidebar.header("Zoom Controls")
 
 # Default values
-x_min, x_max = viewport[0], viewport[1]
-y_min, y_max = viewport[2], viewport[3]
-
-# Update viewport based on selection
-if selected_region and 'range' in selected_region:
-    x_min = selected_region['range']['x'][0]
-    x_max = selected_region['range']['x'][1]
-    y_min = selected_region['range']['y'][0]
-    y_max = selected_region['range']['y'][1]
-    st.session_state.selected_region = [x_min, x_max, y_min, y_max]
-elif "selected_region" in st.session_state:
+if st.session_state.selected_region:
     x_min, x_max, y_min, y_max = st.session_state.selected_region
+else:
+    x_min, x_max = viewport[0], viewport[1]
+    y_min, y_max = viewport[2], viewport[3]
+
+# If a region was selected, update selected_region in session state
+if selected_points:
+    if 'range' in selected_points[0]:
+        x_min = selected_points[0]['range']['x'][0]
+        x_max = selected_points[0]['range']['x'][1]
+        y_min = selected_points[0]['range']['y'][0]
+        y_max = selected_points[0]['range']['y'][1]
+        st.session_state.selected_region = [x_min, x_max, y_min, y_max]
 
 # Update sidebar inputs dynamically
 x_min = st.sidebar.number_input("X Min", value=x_min)
@@ -109,4 +115,5 @@ if st.sidebar.button("Zoom In"):
 # Reset Viewport
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
+    st.session_state.selected_region = None
     st.experimental_rerun()
