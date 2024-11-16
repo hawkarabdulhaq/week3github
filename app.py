@@ -31,9 +31,12 @@ max_iter = st.sidebar.slider(
     help="Set the maximum number of iterations for rendering."
 )
 
-# Initialize viewport in session state
+# Initialize session state variables
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
+
+if "selected_region" not in st.session_state:
+    st.session_state.selected_region = st.session_state.viewport
 
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
@@ -73,25 +76,29 @@ fig.update_layout(
     height=800
 )
 
-# Display Plotly Chart
-st.plotly_chart(fig, use_container_width=True)
+# Plotly event selection
+selected_points = st.plotly_chart(fig, use_container_width=True)
 
-# Manual Region Selection
+# Sidebar Section for Selected Region and Zoom Controls
 st.sidebar.header("Zoom Controls")
-x_min = st.sidebar.number_input("X Min", value=viewport[0])
-x_max = st.sidebar.number_input("X Max", value=viewport[1])
-y_min = st.sidebar.number_input("Y Min", value=viewport[2])
-y_max = st.sidebar.number_input("Y Max", value=viewport[3])
+if st.session_state.selected_region:
+    x_min, x_max, y_min, y_max = st.session_state.selected_region
+else:
+    x_min, x_max, y_min, y_max = viewport
+
+# Update sidebar inputs dynamically
+x_min = st.sidebar.number_input("X Min", value=x_min)
+x_max = st.sidebar.number_input("X Max", value=x_max)
+y_min = st.sidebar.number_input("Y Min", value=y_min)
+y_max = st.sidebar.number_input("Y Max", value=y_max)
 
 # Apply Zoom When Button Clicked
 if st.sidebar.button("Zoom In"):
     if x_min < x_max and y_min < y_max:
         st.session_state.viewport = [x_min, x_max, y_min, y_max]
-        st.sidebar.success(f"Zooming into X: {x_min} to {x_max}, Y: {y_min} to {y_max}")
-        st.experimental_set_query_params(viewport=st.session_state.viewport)
+        st.experimental_rerun()
 
 # Reset Viewport
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
-    st.sidebar.info("Reset to default view.")
-    st.experimental_set_query_params(viewport=st.session_state.viewport)
+    st.experimental_rerun()
