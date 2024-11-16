@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import plotly.express as px
-from streamlit_plotly_events import plotly_events
 
 # Page Configuration
 st.set_page_config(
@@ -37,7 +36,50 @@ if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
 if "selected_region" not in st.session_state:
-    st.session_state.selected_region = None
+    st.session_state.selected_region = st.session_state.viewport.copy()
+
+# Read current viewport
+viewport = st.session_state.viewport
+
+# Sidebar Section for Selected Region and Zoom Controls
+st.sidebar.header("Zoom Controls")
+
+# Use selected_region for x_min, x_max, y_min, y_max
+x_min, x_max, y_min, y_max = st.session_state.selected_region
+
+# Update sidebar inputs dynamically with keys to maintain state
+x_min = st.sidebar.number_input("X Min", value=x_min, key='x_min')
+x_max = st.sidebar.number_input("X Max", value=x_max, key='x_max')
+y_min = st.sidebar.number_input("Y Min", value=y_min, key='y_min')
+y_max = st.sidebar.number_input("Y Max", value=y_max, key='y_max')
+
+# Function to handle zoom in
+def zoom_in():
+    st.session_state.viewport = [
+        st.sidebar.session_state.x_min,
+        st.sidebar.session_state.x_max,
+        st.sidebar.session_state.y_min,
+        st.sidebar.session_state.y_max
+    ]
+    st.session_state.selected_region = st.session_state.viewport.copy()
+
+# Function to reset view
+def reset_view():
+    st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
+    st.session_state.selected_region = st.session_state.viewport.copy()
+    # Reset the number inputs
+    st.sidebar.session_state.x_min = -2.0
+    st.sidebar.session_state.x_max = 1.0
+    st.sidebar.session_state.y_min = -1.5
+    st.sidebar.session_state.y_max = 1.5
+
+# Apply Zoom When Button Clicked
+if st.sidebar.button("Zoom In"):
+    zoom_in()
+
+# Reset Viewport
+if st.sidebar.button("Reset View"):
+    reset_view()
 
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
@@ -57,8 +99,9 @@ def generate_mandelbrot(viewport, width, height, max_iter):
     return mandelbrot_set, x, y
 
 # Generate Mandelbrot Set
-viewport = st.session_state.viewport
-mandelbrot_set, x_vals, y_vals = generate_mandelbrot(viewport, width, height, max_iter)
+mandelbrot_set, x_vals, y_vals = generate_mandelbrot(
+    st.session_state.viewport, width, height, max_iter
+)
 
 # Create Plotly Interactive Plot
 fig = px.imshow(
@@ -68,52 +111,39 @@ fig = px.imshow(
     y=y_vals,
     color_continuous_scale="inferno",
     origin="lower",
-    aspect='auto'
+    aspect='auto',
 )
 fig.update_layout(
     xaxis_title="Real Part",
     yaxis_title="Imaginary Part",
     dragmode="select",
     width=width,
-    height=height
+    height=height,
 )
 
-# Use streamlit-plotly-events to capture selection
-selected_points = plotly_events(fig, select_event=True, override_width='100%')
+# Display the Plotly chart
+chart = st.plotly_chart(fig, use_container_width=True, key='mandelbrot_chart')
 
-# Sidebar Section for Selected Region and Zoom Controls
-st.sidebar.header("Zoom Controls")
+# Capture relayout data from the chart
+relayout_data = st.session_state.get('mandelbrot_chart_relayout_data')
 
-# Default values
-if st.session_state.selected_region:
-    x_min, x_max, y_min, y_max = st.session_state.selected_region
-else:
-    x_min, x_max = viewport[0], viewport[1]
-    y_min, y_max = viewport[2], viewport[3]
-
-# If a region was selected, update selected_region in session state
-if selected_points:
-    if 'range' in selected_points[0]:
-        x_min = selected_points[0]['range']['x'][0]
-        x_max = selected_points[0]['range']['x'][1]
-        y_min = selected_points[0]['range']['y'][0]
-        y_max = selected_points[0]['range']['y'][1]
-        st.session_state.selected_region = [x_min, x_max, y_min, y_max]
-
-# Update sidebar inputs dynamically
-x_min = st.sidebar.number_input("X Min", value=x_min)
-x_max = st.sidebar.number_input("X Max", value=x_max)
-y_min = st.sidebar.number_input("Y Min", value=y_min)
-y_max = st.sidebar.number_input("Y Max", value=y_max)
-
-# Apply Zoom When Button Clicked
-if st.sidebar.button("Zoom In"):
-    if x_min < x_max and y_min < y_max:
-        st.session_state.viewport = [x_min, x_max, y_min, y_max]
-        st.rerun()  # Updated function
-
-# Reset Viewport
-if st.sidebar.button("Reset View"):
-    st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
-    st.session_state.selected_region = None
-    st.rerun()  # Updated function
+# Process selection events
+if relayout_data:
+    if (
+        'xaxis.range[0]' in relayout_data and
+        'xaxis.range[1]' in relayout_data and
+        'yaxis.range[0]' in relayout_data and
+        'yaxis.range[1]' in relayout_data
+    ):
+        # Update selected region based on the selection
+        st.session_state.selected_region = [
+            relayout_data['xaxis.range[0]'],
+            relayout_data['xaxis.range[1]'],
+            relayout_data['yaxis.range[0]'],
+            relayout_data['yaxis.range[1]']
+        ]
+        # Update the sidebar inputs
+        st.sidebar.session_state.x_min = st.session_state.selected_region[0]
+        st.sidebar.session_state.x_max = st.session_state.selected_region[1]
+        st.sidebar.session_state.y_min = st.session_state.selected_region[2]
+        st.sidebar.session_state.y_max = st.session_state.selected_region[3]
