@@ -132,3 +132,4 @@ with col2:
 # Footer
 st.sidebar.markdown("---")
 st.sidebar.markdown("Built with ❤️ by Hawkar")
+
