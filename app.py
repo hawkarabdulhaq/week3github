@@ -1,7 +1,8 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Page Configuration
 st.set_page_config(
@@ -10,27 +11,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom Styles
-st.markdown("""
-    <style>
-    .sidebar .sidebar-content {
-        background-color: #f4f4f8;
-        padding: 10px;
-    }
-    .css-1aumxhk {
-        color: #0A3D62 !important;
-    }
-    .css-1avcm0n {
-        color: #0A3D62 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # Title and Description
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
-Discover the mesmerizing Mandelbrot Set with this interactive app! 
-Zoom into the fractal by selecting a region of interest.
+Explore the mesmerizing Mandelbrot Set interactively! 
+Drag to select a region on the plot, and zoom into the fractal in real-time.
 """)
 
 # Sidebar Parameters
@@ -55,52 +40,64 @@ max_iter = st.sidebar.slider(
 )
 
 # Dynamic Viewport Settings
-viewport = st.session_state.get("viewport", [-2.0, 1.0, -1.5, 1.5])
+if "viewport" not in st.session_state:
+    st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
-# Region Selection
-st.sidebar.subheader("Region Selection")
-x_min = st.sidebar.number_input("X Min", value=viewport[0], step=0.1)
-x_max = st.sidebar.number_input("X Max", value=viewport[1], step=0.1)
-y_min = st.sidebar.number_input("Y Min", value=viewport[2], step=0.1)
-y_max = st.sidebar.number_input("Y Max", value=viewport[3], step=0.1)
+# Generate Mandelbrot Set Function
+def generate_mandelbrot(viewport, width, height, max_iter):
+    x = np.linspace(viewport[0], viewport[1], width)
+    y = np.linspace(viewport[2], viewport[3], height)
+    X, Y = np.meshgrid(x, y)
+    C = X + 1j * Y
 
-# Confirm Region Button
-if st.sidebar.button("🔍 Zoom Into Region"):
-    if x_min < x_max and y_min < y_max:
-        viewport = [x_min, x_max, y_min, y_max]
-        st.session_state.viewport = viewport
-    else:
-        st.sidebar.error("Invalid region! Ensure X Min < X Max and Y Min < Y Max.")
+    Z = np.zeros_like(C, dtype=complex)
+    mandelbrot_set = np.zeros(C.shape, dtype=int)
 
-# Generate Mandelbrot Set
-x = np.linspace(viewport[0], viewport[1], width)
-y = np.linspace(viewport[2], viewport[3], height)
-X, Y = np.meshgrid(x, y)
-C = X + 1j * Y
+    for i in range(max_iter):
+        mask = np.abs(Z) < 2
+        Z[mask] = Z[mask] * Z[mask] + C[mask]
+        mandelbrot_set[mask] += 1
 
-Z = np.zeros_like(C, dtype=complex)
-mandelbrot_set = np.zeros(C.shape, dtype=int)
+    return mandelbrot_set, x, y
 
-for i in range(max_iter):
-    mask = np.abs(Z) < 2
-    Z[mask] = Z[mask] * Z[mask] + C[mask]
-    mandelbrot_set += mask
+# Generate Data
+viewport = st.session_state.viewport
+mandelbrot_set, x, y = generate_mandelbrot(viewport, width, height, max_iter)
 
-# Visualization
-st.subheader("🔍 Mandelbrot Visualization")
-fig, ax = plt.subplots(figsize=(10, 8))
-im = ax.imshow(
+# Create Plotly Interactive Plot
+fig = px.imshow(
     mandelbrot_set,
-    extent=(viewport[0], viewport[1], viewport[2], viewport[3]),
-    cmap="inferno",
-    interpolation="bilinear"
+    labels=dict(color="Iterations"),
+    x=x,
+    y=y,
+    color_continuous_scale="inferno",
+    origin="lower"
 )
-plt.colorbar(im, ax=ax, label="Iterations")
-ax.set_title("Mandelbrot Set", fontsize=14)
-ax.set_xlabel("Real Part")
-ax.set_ylabel("Imaginary Part")
-st.pyplot(fig)
+fig.update_layout(
+    xaxis_title="Real Part",
+    yaxis_title="Imaginary Part",
+    dragmode="select",
+    width=800,
+    height=800
+)
 
-# Footer
-st.sidebar.markdown("---")
-st.sidebar.markdown("Built with ❤️ by Hawkar")
+# Streamlit Plotly Component
+st.plotly_chart(fig, use_container_width=True)
+
+# Get Selected Region
+st.sidebar.header("Zoom Controls")
+selected_region = st.session_state.get("selected_region", None)
+
+if st.session_state.get("plotly_click"):
+    selection = st.session_state.plotly_click
+    viewport = [
+        selection["range"]["x"][0],
+        selection["range"]["x"][1],
+        selection["range"]["y"][0],
+        selection["range"]["y"][1]
+    ]
+    st.session_state.viewport = viewport
+
+# Reset Viewport Button
+if st.sidebar.button("Reset View"):
+    st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
