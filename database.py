@@ -1,25 +1,28 @@
 import sqlite3
 
-# Create a database and establish a connection
+# Debugging output
+print("Starting database setup...")
+
+# Create a new SQLite database
 conn = sqlite3.connect('database.db')
 cursor = conn.cursor()
 
-# Create table for storing Mandelbrot parameters
+# Create a simple table to test the database creation
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS parameters (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    width INTEGER,
-    height INTEGER,
-    max_iter INTEGER
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    value REAL
 )
 ''')
 
-# Insert sample parameters (default values for the Mandelbrot set)
-cursor.execute('''
-INSERT INTO parameters (width, height, max_iter) 
-VALUES (800, 800, 100)
-''')
+# Insert some test data
+cursor.execute("INSERT INTO parameters (name, value) VALUES ('param1', 3.14)")
+cursor.execute("INSERT INTO parameters (name, value) VALUES ('param2', 2.71)")
 
-# Commit changes and close the connection
+# Commit and close
 conn.commit()
 conn.close()
+
+# Debugging output
+print("Database setup completed successfully.")
