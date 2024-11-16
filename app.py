@@ -30,96 +30,47 @@ st.markdown("""
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
 Discover the mesmerizing Mandelbrot Set with this interactive app! 
-Customize parameters, zoom in/out, or pan across the image for a complete exploration.
+Zoom into the fractal by selecting a region of interest.
 """)
 
-# Sidebar
-st.sidebar.title("Control Panel")
-parameters_file = "parameters.csv"
-parameters = pd.read_csv(parameters_file)
-selected_set = st.sidebar.selectbox(
-    "Select Parameter Preset",
-    parameters["Parameter Set"],
-    help="Choose a predefined parameter set for the Mandelbrot visualization."
-)
-selected_params = parameters[parameters["Parameter Set"] == selected_set].iloc[0]
-
 # Sidebar Parameters
+st.sidebar.title("Control Panel")
 width = st.sidebar.slider(
     "Canvas Width (Pixels)",
     400, 2000,
-    int(selected_params["Width"]),
+    800,
     help="Adjust the width of the visualization canvas."
 )
 height = st.sidebar.slider(
     "Canvas Height (Pixels)",
     400, 2000,
-    int(selected_params["Height"]),
+    800,
     help="Adjust the height of the visualization canvas."
 )
 max_iter = st.sidebar.slider(
     "Max Iterations",
     10, 1000,
-    int(selected_params["Max Iterations"]),
+    500,
     help="Set the maximum number of iterations for rendering."
 )
 
 # Dynamic Viewport Settings
 viewport = st.session_state.get("viewport", [-2.0, 1.0, -1.5, 1.5])
 
-# Pan and Zoom Controls
-col1, col2, col3 = st.columns(3)
-with col1:
-    if st.button("🔍 Zoom In"):
-        x_mid = (viewport[0] + viewport[1]) / 2
-        y_mid = (viewport[2] + viewport[3]) / 2
-        x_range = (viewport[1] - viewport[0]) / 2
-        y_range = (viewport[3] - viewport[2]) / 2
-        viewport = [
-            x_mid - x_range / 2, x_mid + x_range / 2,
-            y_mid - y_range / 2, y_mid + y_range / 2
-        ]
-        st.session_state.viewport = viewport
-with col2:
-    if st.button("🔄 Reset View"):
-        viewport = [-2.0, 1.0, -1.5, 1.5]
-        st.session_state.viewport = viewport
-with col3:
-    if st.button("🔍 Zoom Out"):
-        x_mid = (viewport[0] + viewport[1]) / 2
-        y_mid = (viewport[2] + viewport[3]) / 2
-        x_range = (viewport[1] - viewport[0])
-        y_range = (viewport[3] - viewport[2])
-        viewport = [
-            x_mid - x_range, x_mid + x_range,
-            y_mid - y_range, y_mid + y_range
-        ]
-        st.session_state.viewport = viewport
+# Region Selection
+st.sidebar.subheader("Region Selection")
+x_min = st.sidebar.number_input("X Min", value=viewport[0], step=0.1)
+x_max = st.sidebar.number_input("X Max", value=viewport[1], step=0.1)
+y_min = st.sidebar.number_input("Y Min", value=viewport[2], step=0.1)
+y_max = st.sidebar.number_input("Y Max", value=viewport[3], step=0.1)
 
-# Pan Controls
-col4, col5, col6 = st.columns([1, 2, 1])
-with col4:
-    if st.button("⬅️ Left"):
-        x_shift = (viewport[1] - viewport[0]) * 0.1
-        viewport = [viewport[0] - x_shift, viewport[1] - x_shift, viewport[2], viewport[3]]
+# Confirm Region Button
+if st.sidebar.button("🔍 Zoom Into Region"):
+    if x_min < x_max and y_min < y_max:
+        viewport = [x_min, x_max, y_min, y_max]
         st.session_state.viewport = viewport
-with col5:
-    up_down = st.columns([1, 1])
-    with up_down[0]:
-        if st.button("⬆️ Up"):
-            y_shift = (viewport[3] - viewport[2]) * 0.1
-            viewport = [viewport[0], viewport[1], viewport[2] - y_shift, viewport[3] - y_shift]
-            st.session_state.viewport = viewport
-    with up_down[1]:
-        if st.button("⬇️ Down"):
-            y_shift = (viewport[3] - viewport[2]) * 0.1
-            viewport = [viewport[0], viewport[1], viewport[2] + y_shift, viewport[3] + y_shift]
-            st.session_state.viewport = viewport
-with col6:
-    if st.button("➡️ Right"):
-        x_shift = (viewport[1] - viewport[0]) * 0.1
-        viewport = [viewport[0] + x_shift, viewport[1] + x_shift, viewport[2], viewport[3]]
-        st.session_state.viewport = viewport
+    else:
+        st.sidebar.error("Invalid region! Ensure X Min < X Max and Y Min < Y Max.")
 
 # Generate Mandelbrot Set
 x = np.linspace(viewport[0], viewport[1], width)
