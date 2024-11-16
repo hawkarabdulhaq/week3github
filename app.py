@@ -15,7 +15,7 @@ st.set_page_config(
 st.title("✨ Mandelbrot Set Explorer")
 st.write("""
 Explore the mesmerizing Mandelbrot Set interactively! 
-Drag to select a region on the plot, and zoom into the fractal in real-time.
+Drag to select a region on the plot, and then click "Zoom In" to zoom into the fractal.
 """)
 
 # Sidebar Parameters
@@ -39,7 +39,7 @@ max_iter = st.sidebar.slider(
     help="Set the maximum number of iterations for rendering."
 )
 
-# Dynamic Viewport Settings
+# Initialize viewport in session state
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
@@ -60,7 +60,7 @@ def generate_mandelbrot(viewport, width, height, max_iter):
 
     return mandelbrot_set, x, y
 
-# Generate Data
+# Generate Mandelbrot Set
 viewport = st.session_state.viewport
 mandelbrot_set, x, y = generate_mandelbrot(viewport, width, height, max_iter)
 
@@ -84,20 +84,41 @@ fig.update_layout(
 # Streamlit Plotly Component
 st.plotly_chart(fig, use_container_width=True)
 
-# Get Selected Region
-st.sidebar.header("Zoom Controls")
+# Capture the selected region
 selected_region = st.session_state.get("selected_region", None)
+selection_data = st.session_state.get("plotly_selected_data", None)
 
-if st.session_state.get("plotly_click"):
-    selection = st.session_state.plotly_click
-    viewport = [
-        selection["range"]["x"][0],
-        selection["range"]["x"][1],
-        selection["range"]["y"][0],
-        selection["range"]["y"][1]
-    ]
-    st.session_state.viewport = viewport
+if st.session_state.get("plotly_selected_data"):
+    selection = st.session_state.plotly_selected_data
+    st.session_state.selected_region = {
+        "x_min": selection["range"]["x"][0],
+        "x_max": selection["range"]["x"][1],
+        "y_min": selection["range"]["y"][0],
+        "y_max": selection["range"]["y"][1],
+    }
+    st.sidebar.success("Region selected! Click 'Zoom In' to apply.")
+
+# Display Region Information
+if st.session_state.get("selected_region"):
+    st.sidebar.subheader("Selected Region")
+    region = st.session_state.selected_region
+    st.sidebar.write(f"X Range: {region['x_min']} to {region['x_max']}")
+    st.sidebar.write(f"Y Range: {region['y_min']} to {region['y_max']}")
+
+# Zoom In Button
+if st.sidebar.button("Zoom In"):
+    if st.session_state.get("selected_region"):
+        region = st.session_state.selected_region
+        st.session_state.viewport = [
+            region["x_min"],
+            region["x_max"],
+            region["y_min"],
+            region["y_max"],
+        ]
+        st.experimental_rerun()
 
 # Reset Viewport Button
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
+    st.session_state.selected_region = None
+    st.experimental_rerun()
