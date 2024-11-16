@@ -35,9 +35,6 @@ max_iter = st.sidebar.slider(
 if "viewport" not in st.session_state:
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
 
-if "selected_region" not in st.session_state:
-    st.session_state.selected_region = None
-
 # Generate Mandelbrot Set Function
 def generate_mandelbrot(viewport, width, height, max_iter):
     x = np.linspace(viewport[0], viewport[1], width)
@@ -90,10 +87,11 @@ y_max = st.sidebar.number_input("Y Max", value=viewport[3])
 if st.sidebar.button("Zoom In"):
     if x_min < x_max and y_min < y_max:
         st.session_state.viewport = [x_min, x_max, y_min, y_max]
+        st.sidebar.success(f"Zooming into X: {x_min} to {x_max}, Y: {y_min} to {y_max}")
         st.experimental_set_query_params(viewport=st.session_state.viewport)
-        st.session_state.selected_region = None
 
 # Reset Viewport
 if st.sidebar.button("Reset View"):
     st.session_state.viewport = [-2.0, 1.0, -1.5, 1.5]
+    st.sidebar.info("Reset to default view.")
     st.experimental_set_query_params(viewport=st.session_state.viewport)
